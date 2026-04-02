@@ -689,6 +689,28 @@ function showToast(msg) {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+// ─── KEYBOARD NAVIGATION ─────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  // Check if the key pressed was 'Enter'
+  if (e.key === 'Enter') {
+    // Make sure the user is actually inside an input field right now
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+      e.preventDefault(); // Stop the default Enter key behavior
+      
+      // Find all the inputs on the CURRENTLY active screen
+      const inputs = Array.from(document.querySelectorAll('.screen.active input'));
+      const currentIndex = inputs.indexOf(document.activeElement);
+      
+      // If there is a next input, jump to it!
+      if (currentIndex > -1 && currentIndex < inputs.length - 1) {
+        inputs[currentIndex + 1].focus();
+      } else {
+        // If it's the very last input on the screen, just remove focus (closes mobile keyboard)
+        document.activeElement.blur(); 
+      }
+    }
+  }
+});
 loadState();
 if (G) {
   showGame();
