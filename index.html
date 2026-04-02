@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Rummy Score Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green: #1a6b3a;
+    --green-light: #e6f4ec;
+    --green-mid: #2d9653;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1a18;
+    --muted: #6b6b60;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Layout */
+  .app { max-width: 480px; margin: 0 auto; padding: 0 0 80px; min-height: 100vh; }
+
+  /* Header */
+  .header {
+    background: var(--green);
+    padding: 20px 20px 18px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; letter-spacing: 0.02em; }
+  .header-right { display: flex; gap: 8px; align-items: center; }
+  .icon-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 8px; color: #fff; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .icon-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* Screens */
+  .screen { display: none; padding: 20px; }
+  .screen.active { display: block; }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+  }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+
+  /* Inputs */
+  input[type=text], input[type=number], select {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--green-mid); background: #fff; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b60' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: var(--radius-sm); padding: 12px 20px;
+    font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--green); color: #fff; width: 100%; padding: 14px; font-size: 16px; border-radius: var(--radius); }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #e5e1d8; }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-danger:hover { background: #f9d6d3; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .btn-amber { background: var(--amber-light); color: var(--amber); }
+
+  /* Player rows in setup */
+  .player-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .player-row input { flex: 1; }
+  .player-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green-light); color: var(--green); font-weight: 600; font-size: 14px; font-family: 'Syne', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* Joker badge */
+  .joker-bar {
+    background: var(--amber-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 14px; margin-bottom: 14px;
+  }
+  .joker-bar .label { color: var(--muted); font-size: 12px; }
+  .joker-bar .value { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; color: var(--amber); }
+
+  /* Scoreboard table */
+  .score-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -18px; padding: 0 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: center; padding: 8px 6px; font-size: 11px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase;
+    border-bottom: 1.5px solid var(--border); white-space: nowrap;
+  }
+  th.name-col { text-align: left; }
+  td { padding: 9px 6px; text-align: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  td.name-col { text-align: left; font-weight: 500; }
+  tr.total-row td { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; border-bottom: none; padding-top: 12px; }
+  .eliminated td.name-col::after { content: ' ✕'; color: var(--red); font-size: 11px; }
+  .leader-badge { display: inline-block; background: var(--green-light); color: var(--green); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+
+  /* Drop buttons */
+  .drop-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .drop-btn { flex: 1; min-width: 80px; text-align: center; padding: 10px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .drop-btn.selected { border-color: var(--green-mid); background: var(--green-light); color: var(--green); font-weight: 600; }
+  .drop-btn .drop-val { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; display: block; }
+  .drop-btn .drop-label { font-size: 11px; color: var(--muted); display: block; margin-top: 1px; }
+  .drop-btn.selected .drop-label { color: var(--green); }
+
+  /* Score entry per player */
+  .score-entry-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .score-entry-row:last-child { border-bottom: none; }
+  .score-entry-row .p-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .score-entry-row .p-total { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .score-entry-row input { width: 80px; text-align: center; flex-shrink: 0; }
+  .winner-chip { background: var(--green); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 6px; font-weight: 600; }
+  .elim-chip { background: var(--red-light); color: var(--red); font-size: 12px; padding: 4px 10px; border-radius: 6px; }
+
+  /* Max score notice */
+  .max-notice { background: var(--red-light); color: var(--red); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* Bottom action bar */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 20px; display: flex; gap: 10px;
+  }
+  .bottom-bar .btn { flex: 1; }
+
+  /* Floating joker */
+  .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 30px 0; color: var(--muted); font-size: 14px; }
+
+  /* Tabs */
+  .tabs { display: flex; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 16px; }
+  .tab { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-radius: 6px; transition: all 0.15s; }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: #fff; border-radius: 20px;
+    padding: 10px 20px; font-size: 14px; font-weight: 500;
+    opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Settings screen */
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 15px; }
+  .setting-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .toggle { position: relative; width: 44px; height: 26px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 26px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider:before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+  input:checked + .toggle-slider { background: var(--green); }
+  input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .screen.active { animation: fadeIn 0.25s ease; }
+
+  /* Share modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+  .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 480px; padding: 24px 20px; max-height: 80vh; overflow-y: auto; }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .share-text { font-family: monospace; font-size: 13px; background: var(--bg); border-radius: var(--radius-sm); padding: 14px; white-space: pre-wrap; line-height: 1.6; margin-bottom: 16px; }
+
+  /* Number input helpers */
+  .num-row { display: flex; align-items: center; gap: 0; }
+  .num-btn { width: 36px; height: 38px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 20px; color: var(--text); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .num-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); border-right: none; }
+  .num-btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-left: none; }
+  .num-btn:hover { background: #e0dcd4; }
+  .num-row input { border-radius: 0; border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border); }
+
+  @media (max-width: 380px) {
+    .drop-btn .drop-val { font-size: 17px; }
+    .drop-btn { padding: 8px 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="header-title" id="header-title">Rummy Score Board</div>
+        <div class="header-sub" id="header-sub">Closed Joker · No Ads Ever</div>
+      </div>
+      <div class="header-right" id="header-right"></div>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div class="screen active" id="screen-setup">
+    <div class="card">
+      <div class="card-title">Players</div>
+      <div id="player-list"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addPlayer()" style="margin-top:8px">+ Add Player</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Closed Joker</div>
+      <input type="text" id="joker-input" placeholder="e.g. 7♠, Q♥, A♣" maxlength="4" style="max-width:160px"/>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px">The face-down joker card for this game</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startGame()">🃏 Start Game</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="screen-game">
+    <div id="game-content"></div>
+  </div>
+
+  <!-- ADD ROUND SCREEN -->
+  <div class="screen" id="screen-round">
+    <div id="round-content"></div>
+  </div>
+
+  <!-- SETTINGS SCREEN -->
+  <div class="screen" id="screen-settings">
+    <div class="card">
+      <div class="card-title">Game Settings</div>
+      <div class="setting-row">
+        <div><div class="setting-label">Max Score</div><div class="setting-sub">Elimination threshold</div></div>
+        <input type="number" id="settings-max" style="width:80px;text-align:center" onchange="updateMaxScore(this.value)"/>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Joker Card</div><div class="setting-sub">Closed joker for this session</div></div>
+        <input type="text" id="settings-joker" style="width:70px;text-align:center" maxlength="4" onchange="updateJoker(this.value)"/>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Manage Players</div>
+      <div id="settings-players"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addPlayerMidGame()" style="margin-top:10px">+ Add Player</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Danger Zone</div>
+      <button class="btn btn-danger" style="width:100%" onclick="confirmReset()">🗑 End Game & Reset</button>
+    </div>
+    <div style="height:80px"></div>
+  </div>
+</div>
+
+<!-- Bottom bar (game) -->
+<div class="bottom-bar" id="bottom-bar" style="display:none">
+  <button class="btn btn-secondary" onclick="showSettings()">⚙ Settings</button>
+  <button class="btn btn-primary" onclick="showAddRound()">+ Add Round</button>
+</div>
+
+<!-- Bottom bar (round) -->
+<div class="bottom-bar" id="bottom-bar-round" style="display:none">
+  <button class="btn btn-ghost" onclick="cancelRound()">Cancel</button>
+  <button class="btn btn-primary" onclick="submitRound()">✓ Save Round</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let G = null; // game state
+
+function loadState() {
+  try { G = JSON.parse(localStorage.getItem('rummy_g') || 'null'); } catch(e){ G = null; }
+}
+function saveState() {
+  try { localStorage.setItem('rummy_g', JSON.stringify(G)); } catch(e){}
+}
+
+function initPlayers() {
+  renderPlayers();
+}
+
+// ─── SETUP ───────────────────────────────────────────────────────────────────
+let setupPlayers = ['', '', ''];
+
+function renderPlayers() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = setupPlayers.map((p, i) => `
+    <div class="player-row">
+      <div class="player-avatar">${p ? p[0].toUpperCase() : (i+1)}</div>
+      <input type="text" placeholder="Player ${i+1}" value="${p}"
+        oninput="setupPlayers[${i}]=this.value; this.previousElementSibling.textContent=this.value?this.value[0].toUpperCase():'${i+1}'"
+      />
+      ${setupPlayers.length > 2 ? `<button class="btn btn-danger btn-sm" onclick="removeSetupPlayer(${i})" style="padding:7px 10px;flex-shrink:0">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function addPlayer() {
+  setupPlayers.push('');
+  renderPlayers();
+}
+
+function removeSetupPlayer(i) {
+  setupPlayers.splice(i, 1);
+  renderPlayers();
+}
+
+function adjustMax(delta) {
+  const el = document.getElementById('max-score');
+  el.value = Math.max(50, (parseInt(el.value) || 200) + delta);
+}
+
+function startGame() {
+  const names = setupPlayers.map(p => p.trim()).filter(Boolean);
+  if (names.length < 2) { showToast('Add at least 2 players!'); return; }
+  const joker = document.getElementById('joker-input').value.trim();
+  const maxScore = Infinity;
+  G = {
+    players: names.map(name => ({ name, total: 0, eliminated: false, reEntered: false })),
+    rounds: [],
+    joker,
+    maxScore,
+    createdAt: Date.now()
+  };
+  saveState();
+  showGame();
+}
+
+// ─── GAME SCREEN ─────────────────────────────────────────────────────────────
+function showGame() {
+  document.getElementById('header-title').textContent = 'Score Board';
+  document.getElementById('header-sub').textContent = `Round ${G.rounds.length} · Max ${G.maxScore}`;
+  setScreen('game');
+  document.getElementById('bottom-bar').style.display = 'flex';
+  document.getElementById('bottom-bar-round').style.display = 'none';
+  renderGame();
+}
+
+function renderGame() {
+  document.getElementById('header-sub').textContent = `Round ${G.rounds.length} · Max ${G.maxScore}`;
+  const content = document.getElementById('game-content');
+
+  // Header right
+  document.getElementById('header-right').innerHTML = `
+    <button class="icon-btn" onclick="showShareModal()" title="Share">↑</button>
+  `;
+
+  let html = '';
+
+  // Joker bar
+  if (G.joker) {
+    html += `<div class="joker-bar">
+      <div><div class="label">CLOSED JOKER</div><div style="font-size:11px;color:var(--muted);margin-top:2px">This game's wild card</div></div>
+      <div class="value">${G.joker}</div>
+    </div>`;
+  }
+
+  // Scoreboard
+  const activePlayers = G.players.filter(p => !p.eliminated);
+  const winner = activePlayers.length === 1 ? activePlayers[0] : null;
+  const minScore = winner ? winner.total : Math.min(...G.players.filter(p=>!p.eliminated).map(p=>p.total));
+
+  html += `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="card-title" style="margin:0">Scoreboard</div>
+      ${G.rounds.length > 0 ? `<button class="btn btn-ghost btn-sm" onclick="undoLastRound()">↩ Undo</button>` : ''}
+    </div>`;
+
+  if (winner) {
+    html += `<div style="background:var(--green-light);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--green)">🏆 ${winner.name} Wins!</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Score: ${winner.total}</div>
+    </div>`;
+  }
+
+  html += `<div class="score-scroll"><table>
+    <thead><tr>
+      <th class="name-col">Player</th>`;
+  G.rounds.forEach((_, i) => html += `<th>R${i+1}</th>`);
+  html += `<th>Total</th></tr></thead><tbody>`;
+
+  G.players.forEach(p => {
+    const isLeader = !p.eliminated && p.total === minScore && G.rounds.length > 0;
+    html += `<tr class="${p.eliminated ? 'eliminated' : ''}">
+      <td class="name-col">${p.name}${isLeader && !winner ? `<span class="leader-badge">↓</span>` : ''}</td>`;
+    G.rounds.forEach(r => {
+      const sc = r.scores[p.name];
+      const drop = r.drops && r.drops[p.name];
+      html += `<td>${drop ? `<span style="color:var(--amber);font-weight:600">${sc}</span>` : (sc !== undefined ? sc : '-')}</td>`;
+    });
+    html += `<td style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${p.total}</td></tr>`;
+  });
+
+  html += `</tbody></table></div></div>`;
+
+  content.innerHTML = html;
+}
+
+// ─── ADD ROUND ────────────────────────────────────────────────────────────────
+let pendingRound = {};
+
+function showAddRound() {
+  pendingRound = {};
+  G.players.filter(p => !p.eliminated).forEach(p => {
+    pendingRound[p.name] = { score: '', dropType: null };
+  });
+  setScreen('round');
+  document.getElementById('bottom-bar').style.display = 'none';
+  document.getElementById('bottom-bar-round').style.display = 'flex';
+  document.getElementById('header-title').textContent = `Round ${G.rounds.length + 1}`;
+  document.getElementById('header-sub').textContent = 'Enter scores';
+  document.getElementById('header-right').innerHTML = '';
+  renderRound();
+}
+
+function renderRound() {
+  const activePlayers = G.players.filter(p => !p.eliminated);
+  let html = '';
+
+  activePlayers.forEach(p => {
+    const pr = pendingRound[p.name] || { score: '', dropType: null };
+    html += `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px">${p.name}</div>
+          <div style="font-size:12px;color:var(--muted)">Current: ${p.total} pts</div>
+        </div>
+        ${pr.dropType ? `<span class="chip" style="background:var(--amber-light);color:var(--amber)">${pr.dropType}</span>` : ''}
+      </div>
+
+      <div class="card-title">Drop</div>
+      <div class="drop-btns">
+        <div class="drop-btn ${pr.dropType === 'Open Drop' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Open Drop',20)">
+          <span class="drop-val">20</span>
+          <span class="drop-label">Open Drop</span>
+        </div>
+        <div class="drop-btn ${pr.dropType === 'Middle Drop' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Middle Drop',40)">
+          <span class="drop-val">40</span>
+          <span class="drop-label">Middle Drop</span>
+        </div>
+        <div class="drop-btn ${pr.dropType === 'Full Count' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Full Count',80)">
+          <span class="drop-val">80</span>
+          <span class="drop-label">Full Count</span>
+        </div>
+        <div class="drop-btn ${pr.dropType === 'Custom' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Custom',null)">
+          <span class="drop-val">✎</span>
+          <span class="drop-label">Custom</span>
+        </div>
+      </div>
+
+      ${pr.dropType === 'Custom' || pr.dropType === null ? `
+        <div style="margin-top:12px">
+          <div class="card-title">Score (if won or custom)</div>
+          <div class="num-row">
+            <button class="num-btn" onclick="adjustScore('${p.name}',-10)">−</button>
+            <input type="number" min="0" value="${pr.score}" id="score-${p.name.replace(/\s/g,'_')}"
+              oninput="setScore('${p.name}',this.value)" placeholder="0"/>
+            <button class="num-btn" onclick="adjustScore('${p.name}',10)">+</button>
+          </div>
+        </div>` : ''}
+    </div>`;
+  });
+
+  document.getElementById('round-content').innerHTML = html;
+}
+
+function selectDrop(name, type, val) {
+  if (!pendingRound[name]) pendingRound[name] = { score: '', dropType: null };
+  if (pendingRound[name].dropType === type) {
+    pendingRound[name].dropType = null;
+    pendingRound[name].score = '';
+  } else {
+    pendingRound[name].dropType = type;
+    pendingRound[name].score = val !== null ? val : (pendingRound[name].score || '');
+  }
+  renderRound();
+}
+
+function setScore(name, val) {
+  if (!pendingRound[name]) pendingRound[name] = { score: '', dropType: null };
+  pendingRound[name].score = val;
+}
+
+function adjustScore(name, delta) {
+  if (!pendingRound[name]) pendingRound[name] = { score: 0, dropType: null };
+  const cur = parseInt(pendingRound[name].score) || 0;
+  pendingRound[name].score = Math.max(0, cur + delta);
+  const id = 'score-' + name.replace(/\s/g, '_');
+  const el = document.getElementById(id);
+  if (el) el.value = pendingRound[name].score;
+}
+
+function cancelRound() {
+  showGame();
+}
+
+function submitRound() {
+  const activePlayers = G.players.filter(p => !p.eliminated);
+  const roundScores = {};
+  const roundDrops = {};
+  let valid = true;
+
+  for (const p of activePlayers) {
+    const pr = pendingRound[p.name];
+    const score = parseInt(pr.score);
+    if (isNaN(score) || score < 0) {
+      showToast(`Enter score for ${p.name}`);
+      valid = false; break;
+    }
+    roundScores[p.name] = score;
+    if (pr.dropType) roundDrops[p.name] = pr.dropType;
+  }
+
+  if (!valid) return;
+
+  // Find winner (score 0 or lowest) — actually in rummy whoever declares wins with 0 points
+  // We just store all scores as-is
+  G.rounds.push({ scores: roundScores, drops: roundDrops, ts: Date.now() });
+
+  // Update totals
+  G.players.forEach(p => {
+    if (!p.eliminated && roundScores[p.name] !== undefined) {
+      p.total += roundScores[p.name];
+      
+    }
+  });
+
+  saveState();
+  showGame();
+}
+
+function undoLastRound() {
+  if (!G.rounds.length) return;
+  const last = G.rounds.pop();
+  G.players.forEach(p => {
+    if (last.scores[p.name] !== undefined) {
+      p.total -= last.scores[p.name];
+      p.eliminated = p.total >= G.maxScore;
+    }
+  });
+  saveState();
+  renderGame();
+  showToast('Last round removed');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function showSettings() {
+  setScreen('settings');
+  document.getElementById('bottom-bar').style.display = 'none';
+  document.getElementById('header-title').textContent = 'Settings';
+  document.getElementById('header-sub').textContent = '';
+  document.getElementById('header-right').innerHTML = `<button class="icon-btn" onclick="showGame()">✕</button>`;
+  document.getElementById('settings-max').value = G.maxScore;
+  document.getElementById('settings-joker').value = G.joker || '';
+  renderSettingsPlayers();
+}
+
+function renderSettingsPlayers() {
+  const el = document.getElementById('settings-players');
+  el.innerHTML = G.players.map((p, i) => `
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">${p.name}</div>
+        <div class="setting-sub">${p.total} pts${p.eliminated ? ' · eliminated' : ''}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${p.eliminated ? `<button class="btn btn-amber btn-sm" onclick="reEnterPlayer(${i})">Re-enter</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateMaxScore(val) {
+  G.maxScore = parseInt(val) || 200;
+  saveState();
+}
+
+function updateJoker(val) {
+  G.joker = val.trim();
+  saveState();
+}
+
+function addPlayerMidGame() {
+  const name = prompt('New player name:');
+  if (!name || !name.trim()) return;
+  const maxTotal = Math.max(...G.players.map(p => p.total));
+  G.players.push({ name: name.trim(), total: maxTotal, eliminated: false, reEntered: true });
+  // Add them to all previous rounds with max score
+  G.rounds.forEach(r => { r.scores[name.trim()] = 0; });
+  saveState();
+  renderSettingsPlayers();
+  showToast(`${name.trim()} added`);
+}
+
+function reEnterPlayer(i) {
+  const p = G.players[i];
+  const maxTotal = Math.max(...G.players.filter(x=>!x.eliminated).map(x=>x.total));
+  p.total = maxTotal;
+  p.eliminated = false;
+  p.reEntered = true;
+  saveState();
+  renderSettingsPlayers();
+  showToast(`${p.name} re-entered`);
+}
+
+function confirmReset() {
+  if (confirm('End this game and start fresh? This cannot be undone.')) {
+    G = null;
+    localStorage.removeItem('rummy_g');
+    setupPlayers = ['', '', ''];
+    setScreen('setup');
+    document.getElementById('bottom-bar').style.display = 'none';
+    document.getElementById('header-title').textContent = 'Rummy Score Board';
+    document.getElementById('header-sub').textContent = 'Closed Joker · No Ads Ever';
+    document.getElementById('header-right').innerHTML = '';
+    renderPlayers();
+  }
+}
+
+// ─── SHARE ───────────────────────────────────────────────────────────────────
+function showShareModal() {
+  let text = `🃏 RUMMY SCORE BOARD\n`;
+  if (G.joker) text += `Joker: ${G.joker}\n`;
+  text += `\n`;
+  text += `PLAYER`.padEnd(14) + `SCORE\n`;
+  text += `─`.repeat(20) + `\n`;
+
+  const sorted = [...G.players].sort((a,b) => a.total - b.total);
+  sorted.forEach((p, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '  ';
+    text += `${medal} ${p.name}`.padEnd(14) + `${p.total}${p.eliminated ? ' ✕' : ''}\n`;
+  });
+  text += `\nRound ${G.rounds.length} · Scored on Rummy Score Board`;
+
+  const html = `<div class="modal-handle"></div>
+    <div class="modal-title">Share Scoreboard</div>
+    <div class="share-text">${text}</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" style="flex:1" onclick="copyShare()">📋 Copy Text</button>
+      ${navigator.share ? `<button class="btn btn-primary" style="flex:1" onclick="nativeShare()">↑ Share</button>` : ''}
+    </div>`;
+
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').style.display = 'flex';
+  window._shareText = text;
+}
+
+function copyShare() {
+  navigator.clipboard.writeText(window._shareText || '').then(() => {
+    showToast('Copied to clipboard!');
+    closeModal();
+  }).catch(() => showToast('Copy failed'));
+}
+
+function nativeShare() {
+  navigator.share({ title: 'Rummy Score Board', text: window._shareText });
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal')) {
+    document.getElementById('modal').style.display = 'none';
+  }
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function setScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+loadState();
+if (G) {
+  showGame();
+} else {
+  renderPlayers();
+}
+</script>
+</body>
+</html>
