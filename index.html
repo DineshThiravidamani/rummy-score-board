@@ -225,7 +225,7 @@
     <div class="header-row">
       <div>
         <div class="header-title" id="header-title">Rummy Score Board</div>
-        <div class="header-sub" id="header-sub">Closed Joker · No Ads Ever</div>
+        <div class="header-sub" id="header-sub"></div>
       </div>
       <div class="header-right" id="header-right"></div>
     </div>
@@ -400,7 +400,9 @@ function renderGame() {
   G.rounds.forEach((_, i) => html += `<th>R${i+1}</th>`);
   html += `<th>Total</th></tr></thead><tbody>`;
 
-  G.players.forEach(p => {
+  [...G.players]
+  .sort((a, b) => a.total - b.total)
+  .forEach(p => {
     const isLeader = !p.eliminated && p.total === minScore && G.rounds.length > 0;
     html += `<tr class="${p.eliminated ? 'eliminated' : ''}">
       <td class="name-col">${p.name}${isLeader && !winner ? `<span class="leader-badge">↓</span>` : ''}</td>`;
@@ -449,29 +451,9 @@ function renderRound() {
         ${pr.dropType ? `<span class="chip" style="background:var(--amber-light);color:var(--amber)">${pr.dropType}</span>` : ''}
       </div>
 
-      <div class="card-title">Drop</div>
-      <div class="drop-btns">
-        <div class="drop-btn ${pr.dropType === 'Open Drop' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Open Drop',20)">
-          <span class="drop-val">20</span>
-          <span class="drop-label">Open Drop</span>
-        </div>
-        <div class="drop-btn ${pr.dropType === 'Middle Drop' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Middle Drop',40)">
-          <span class="drop-val">40</span>
-          <span class="drop-label">Middle Drop</span>
-        </div>
-        <div class="drop-btn ${pr.dropType === 'Full Count' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Full Count',80)">
-          <span class="drop-val">80</span>
-          <span class="drop-label">Full Count</span>
-        </div>
-        <div class="drop-btn ${pr.dropType === 'Custom' ? 'selected' : ''}" onclick="selectDrop('${p.name}','Custom',null)">
-          <span class="drop-val">✎</span>
-          <span class="drop-label">Custom</span>
-        </div>
-      </div>
-
-      ${pr.dropType === 'Custom' || pr.dropType === null ? `
+      ${pr.dropType === '' || pr.dropType === null ? `
         <div style="margin-top:12px">
-          <div class="card-title">Score (if won or custom)</div>
+          <div class="card-title">Score</div>
           <div class="num-row">
             <button class="num-btn" onclick="adjustScore('${p.name}',-10)">−</button>
             <input type="number" min="0" value="${pr.score}" id="score-${p.name.replace(/\s/g,'_')}"
@@ -543,6 +525,10 @@ function submitRound() {
     if (!p.eliminated && roundScores[p.name] !== undefined) {
       p.total += roundScores[p.name];
       
+      // ADD THIS LINE MAN! Check if they crossed the threshold
+      if (p.total >= G.maxScore) {
+        p.eliminated = true;
+      }
     }
   });
 
@@ -593,7 +579,14 @@ function renderSettingsPlayers() {
 
 function updateMaxScore(val) {
   G.maxScore = parseInt(val) || 200;
+  
+  // ADD THIS LOOP MAN! Re-check all players against the new max score
+  G.players.forEach(p => {
+    p.eliminated = (p.total >= G.maxScore);
+  });
+  
   saveState();
+  renderSettingsPlayers(); // This updates the UI to show they are eliminated
 }
 
 function updateJoker(val) {
